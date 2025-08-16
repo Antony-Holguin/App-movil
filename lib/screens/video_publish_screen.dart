@@ -79,17 +79,17 @@ class _VideoPublishScreenState extends State<VideoPublishScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video published successfully!')),
+          const SnackBar(content: Text('Video publicado exitosamente!')),
         );
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to publish video')),
+          const SnackBar(content: Text('Error al subir el video')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error publishing video: $e')),
+        SnackBar(content: Text('Error al publicar el video: $e')),
       );
     } finally {
       setState(() {
@@ -102,7 +102,7 @@ class _VideoPublishScreenState extends State<VideoPublishScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Publish Video'),
+        title: const Text('Publicar Video'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(
@@ -183,7 +183,7 @@ class _VideoPublishScreenState extends State<VideoPublishScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'Select Platforms:',
+              'Seleccionar las plataformas:',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -211,7 +211,7 @@ class _VideoPublishScreenState extends State<VideoPublishScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
-                                'Published',
+                                'Publicados',
                                 style: TextStyle(color: Colors.white, fontSize: 10),
                               ),
                             ),
@@ -219,7 +219,7 @@ class _VideoPublishScreenState extends State<VideoPublishScreen> {
                         ],
                       ),
                       subtitle: isAlreadyPublished 
-                          ? const Text('Already published to this platform')
+                          ? const Text('Ya fue publicado en esta plataforma')
                           : null,
                       value: isSelected,
                       onChanged: (value) {
@@ -247,10 +247,10 @@ class _VideoPublishScreenState extends State<VideoPublishScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                           SizedBox(width: 12),
-                          Text('Publishing...'),
+                          Text('Publicando...'),
                         ],
                       )
-                    : const Text('Publish Video'),
+                    : const Text('Publicar Video'),
               ),
             ),
           ],

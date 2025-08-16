@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Quito Honesto',
+      title: 'Social man app',
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       //home: const MyHomePage(),
@@ -34,6 +34,6 @@ class MyApp extends StatelessWidget {
   ThemeData _buildTheme() {
     return ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 9, 71, 128)));
+            seedColor: const Color.fromARGB(255, 11, 19, 28)));
   }
 }

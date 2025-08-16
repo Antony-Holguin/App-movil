@@ -41,7 +41,7 @@ class SecondHomePage extends StatelessWidget{
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Manage and share your videos across social media platforms',
+                  'Plataforma para subida de videos',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -60,7 +60,7 @@ class SecondHomePage extends StatelessWidget{
                       );
                     },
                     icon: const Icon(Icons.video_library),
-                    label: const Text('My Videos'),
+                    label: const Text('Mis Videos'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       textStyle: const TextStyle(fontSize: 18),
@@ -79,7 +79,7 @@ class SecondHomePage extends StatelessWidget{
                       );
                     },
                     icon: const Icon(Icons.videocam),
-                    label: const Text('Upload Video'),
+                    label: const Text('Subir videos'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       textStyle: const TextStyle(fontSize: 18),

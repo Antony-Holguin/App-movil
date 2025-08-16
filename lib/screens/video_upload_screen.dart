@@ -52,7 +52,7 @@ class _VideoUploadScreenState extends State<VideoUploadScreen> {
   Future<void> _recordVideo() async {
     if (_cameras.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No cameras available')),
+        const SnackBar(content: Text('Sin camaras disponibles')),
       );
       return;
     }
@@ -60,7 +60,7 @@ class _VideoUploadScreenState extends State<VideoUploadScreen> {
     final permission = await Permission.camera.request();
     if (!permission.isGranted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera permission required')),
+        const SnackBar(content: Text('Se necesitan permisos para abrir la camara')),
       );
       return;
     }
@@ -157,7 +157,7 @@ class _VideoUploadScreenState extends State<VideoUploadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Video'),
+        title: const Text('Subir Video'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SingleChildScrollView(
@@ -174,7 +174,7 @@ class _VideoUploadScreenState extends State<VideoUploadScreen> {
                       const Icon(Icons.videocam, size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
                       const Text(
-                        'Select a video to upload',
+                        'Selecciona un video para subir',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 16),
@@ -184,12 +184,12 @@ class _VideoUploadScreenState extends State<VideoUploadScreen> {
                           ElevatedButton.icon(
                             onPressed: _recordVideo,
                             icon: const Icon(Icons.videocam),
-                            label: const Text('Record'),
+                            label: const Text('Grabar'),
                           ),
                           ElevatedButton.icon(
                             onPressed: _selectFromGallery,
                             icon: const Icon(Icons.photo_library),
-                            label: const Text('Gallery'),
+                            label: const Text('Galeria'),
                           ),
                         ],
                       ),

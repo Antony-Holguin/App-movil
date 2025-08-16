@@ -12,31 +12,47 @@ class VideoListScreen extends StatefulWidget {
   State<VideoListScreen> createState() => _VideoListScreenState();
 }
 
-class _VideoListScreenState extends State<VideoListScreen> {
+class _VideoListScreenState extends State<VideoListScreen> with SingleTickerProviderStateMixin {
   final VideoService _videoService = VideoService();
   final TextEditingController _searchController = TextEditingController();
   
-  List<VideoModel> _videos = [];
-  List<VideoModel> _filteredVideos = [];
-  bool _isLoading = true;
+  late TabController _tabController;
+  
+  List<VideoModel> _uploadedVideos = [];
+  List<VideoModel> _publishedVideos = [];
+  List<VideoModel> _filteredUploadedVideos = [];
+  List<VideoModel> _filteredPublishedVideos = [];
+  
+  bool _isLoadingUploaded = true;
+  bool _isLoadingPublished = true;
   String _sortBy = 'date';
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadVideos();
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   Future<void> _loadVideos() async {
+    // Cargar videos subidos y publicados en paralelo
+    await Future.wait([
+      _loadUploadedVideos(),
+      _loadPublishedVideos(),
+    ]);
+  }
+
+  Future<void> _loadUploadedVideos() async {
     setState(() {
-      _isLoading = true;
+      _isLoadingUploaded = true;
     });
 
     try {
@@ -45,16 +61,41 @@ class _VideoListScreenState extends State<VideoListScreen> {
         sortBy: _sortBy,
       );
       setState(() {
-        _videos = videos;
-        _filteredVideos = videos;
+        _uploadedVideos = videos;
+        _filteredUploadedVideos = videos;
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading videos: $e')),
+        SnackBar(content: Text('Error loading uploaded videos: $e')),
       );
     } finally {
       setState(() {
-        _isLoading = false;
+        _isLoadingUploaded = false;
+      });
+    }
+  }
+
+  Future<void> _loadPublishedVideos() async {
+    setState(() {
+      _isLoadingPublished = true;
+    });
+
+    try {
+      final videos = await _videoService.getPublishedVideos(
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        sortBy: _sortBy,
+      );
+      setState(() {
+        _publishedVideos = videos;
+        _filteredPublishedVideos = videos;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading published videos: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoadingPublished = false;
       });
     }
   }
@@ -63,9 +104,16 @@ class _VideoListScreenState extends State<VideoListScreen> {
     setState(() {
       _searchQuery = query;
       if (query.isEmpty) {
-        _filteredVideos = _videos;
+        _filteredUploadedVideos = _uploadedVideos;
+        _filteredPublishedVideos = _publishedVideos;
       } else {
-        _filteredVideos = _videos.where((video) {
+        _filteredUploadedVideos = _uploadedVideos.where((video) {
+          return video.title.toLowerCase().contains(query.toLowerCase()) ||
+                 video.description.toLowerCase().contains(query.toLowerCase()) ||
+                 video.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
+        }).toList();
+        
+        _filteredPublishedVideos = _publishedVideos.where((video) {
           return video.title.toLowerCase().contains(query.toLowerCase()) ||
                  video.description.toLowerCase().contains(query.toLowerCase()) ||
                  video.tags.any((tag) => tag.toLowerCase().contains(query.toLowerCase()));
@@ -77,7 +125,18 @@ class _VideoListScreenState extends State<VideoListScreen> {
   void _sortVideos(String sortBy) {
     setState(() {
       _sortBy = sortBy;
-      _filteredVideos.sort((a, b) {
+      
+      _filteredUploadedVideos.sort((a, b) {
+        switch (sortBy) {
+          case 'title':
+            return a.title.compareTo(b.title);
+          case 'date':
+          default:
+            return b.uploadDate.compareTo(a.uploadDate);
+        }
+      });
+      
+      _filteredPublishedVideos.sort((a, b) {
         switch (sortBy) {
           case 'title':
             return a.title.compareTo(b.title);
@@ -93,8 +152,8 @@ class _VideoListScreenState extends State<VideoListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Video'),
-        content: Text('Are you sure you want to delete "${video.title}"?'),
+        title: const Text('Eliminar Video'),
+        content: Text('Estas seguro que quieres eliminar el video "${video.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -112,8 +171,10 @@ class _VideoListScreenState extends State<VideoListScreen> {
       try {
         await _videoService.deleteVideo(video.id);
         setState(() {
-          _videos.removeWhere((v) => v.id == video.id);
-          _filteredVideos.removeWhere((v) => v.id == video.id);
+          _uploadedVideos.removeWhere((v) => v.id == video.id);
+          _publishedVideos.removeWhere((v) => v.id == video.id);
+          _filteredUploadedVideos.removeWhere((v) => v.id == video.id);
+          _filteredPublishedVideos.removeWhere((v) => v.id == video.id);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Video deleted successfully')),
@@ -126,11 +187,49 @@ class _VideoListScreenState extends State<VideoListScreen> {
     }
   }
 
+  Widget _buildVideoList(List<VideoModel> videos, bool isLoading) {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    if (videos.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.video_library, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'No se han encontrado videos',
+              style: TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      itemCount: videos.length,
+      itemBuilder: (context, index) {
+        final video = videos[index];
+        return VideoListItem(
+          video: video,
+          onDelete: () => _deleteVideo(video),
+          onPublish: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => VideoPublishScreen(video: video),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Videos'),
+        title: const Text('Mis Videos'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           PopupMenuButton<String>(
@@ -138,15 +237,22 @@ class _VideoListScreenState extends State<VideoListScreen> {
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'date',
-                child: Text('Sort by Date'),
+                child: Text('Ordenar por fecha'),
               ),
               const PopupMenuItem(
                 value: 'title',
-                child: Text('Sort by Title'),
+                child: Text('Ordenar por titulo'),
               ),
             ],
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Subidos', icon: Icon(Icons.upload)),
+            Tab(text: 'Publicados', icon: Icon(Icons.public)),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -155,7 +261,7 @@ class _VideoListScreenState extends State<VideoListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: const InputDecoration(
-                labelText: 'Search videos...',
+                labelText: 'Buscar videos...',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
@@ -163,37 +269,13 @@ class _VideoListScreenState extends State<VideoListScreen> {
             ),
           ),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredVideos.isEmpty
-                    ? const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.video_library, size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text(
-                              'No videos found',
-                              style: TextStyle(fontSize: 18, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: _filteredVideos.length,
-                        itemBuilder: (context, index) {
-                          final video = _filteredVideos[index];
-                          return VideoListItem(
-                            video: video,
-                            onDelete: () => _deleteVideo(video),
-                            onPublish: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => VideoPublishScreen(video: video),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildVideoList(_filteredUploadedVideos, _isLoadingUploaded),
+                _buildVideoList(_filteredPublishedVideos, _isLoadingPublished),
+              ],
+            ),
           ),
         ],
       ),
